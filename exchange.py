@@ -3,20 +3,11 @@ import uuid
 import heapq
 import logging
 
-from decimal    import Decimal, ROUND_HALF_UP as rnd
+from decimal import Decimal, ROUND_HALF_UP as rnd
 
+logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger("Exchange Logger")
-LOGGER.setLevel(logging.DEBUG)
 
-# Remove all handlers associated with the logger object
-for handler in LOGGER.handlers[:]:
-    LOGGER.removeHandler(handler)
-
-handler = logging.StreamHandler()
-handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
-handler.setFormatter(formatter)
-LOGGER.addHandler(handler)
 
 class Order:
     """Represents a single order in the exchange."""
@@ -137,7 +128,7 @@ class OrderBook:
             print(order)
         print("#"*34)
         print("#          SELL ORDERS           #")
-        print("#"*34) 
+        print("#"*34)
         for _, _, order in sorted(self.offers):
             print(order)
         print()
@@ -196,10 +187,10 @@ def main():
     o4 = Order(symbol='TESLA', side='BUY', price=103.00, quantity=10) # take partially (10) on o3
     o5 = Order(symbol='TESLA', side='BUY', price=103.00, quantity=10) # take again partially (10) on o3
     o6 = Order(symbol='TESLA', side='BUY', price=103.00, quantity=30) # take fully (10) on o3, then on o2(10), the rest (10) remains
-    o7 = Order(symbol='TESLA', side='SELL', price=100.00, quantity=60) # take 
+    o7 = Order(symbol='TESLA', side='SELL', price=100.00, quantity=60) # take
     send_order(tesla_book, [o4,o5,o6,o7])
 
- 
+
      # Create new market base for TOYOTA
     toyota_book = OrderBook('TOYOTA')
     oo1 = Order(symbol='TOYOTA', side='BUY', price=100.00, quantity=10)
