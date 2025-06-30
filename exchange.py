@@ -26,6 +26,31 @@ class Order:
         self.side = side.upper()  # 'BUY' or 'SELL'
         self.price = Decimal(price).quantize(Decimal("0.01"), rounding=rnd)
         self.quantity = int(quantity)
+        self.original_quantity = int(quantity)  # Track original quantity
+
+    def execute(self, exec_quantity: int) -> int:
+        """Execute a portion of the order and return the executed quantity.
+        
+        Args:
+            exec_quantity: The quantity to execute
+            
+        Returns:
+            The actual executed quantity (may be less than requested if insufficient quantity)
+            
+        Raises:
+            ValueError: If exec_quantity is negative or zero
+        """
+        if exec_quantity <= 0:
+            raise ValueError("Execution quantity must be positive")
+        
+        actual_exec_qty = min(exec_quantity, self.quantity)
+        self.quantity -= actual_exec_qty
+        return actual_exec_qty
+    
+    def is_filled(self) -> bool:
+        """Check if the order is completely filled."""
+        return self.quantity == 0
+        
 
     def __repr__(self):
         return (f"Order(order_id={self.order_id}, symbol='{self.symbol}', side='{self.side}', "
@@ -69,22 +94,26 @@ class OrderBook:
             if price_cmp(order.price, best_price):
                 trade_qty = min(order.quantity, best_order.quantity)
                 LOGGER.info(trade_log_fmt.format(trade_qty=trade_qty, price=best_price, buy_id=order.order_id, sell_id=best_order.order_id))
+                
+                # Use the new execute method instead of direct quantity manipulation
+                actual_trade_qty = order.execute(trade_qty)
+                best_order.execute(actual_trade_qty)
+                
                 self._record_trade(
                     buy_id=order.order_id if order.side == 'BUY' else best_order.order_id,
                     sell_id=best_order.order_id if order.side == 'BUY' else order.order_id,
                     price=best_price,
-                    quantity=trade_qty,
+                    quantity=actual_trade_qty,
                     active_side=order.side
                 )
-                order.quantity -= trade_qty
-                best_order.quantity -= trade_qty
-                if best_order.quantity == 0:
+                
+                if best_order.is_filled():
                     heapq.heappop(heap)
                 else:
                     break  # Partial fill, stop matching
             else:
                 break  # No match (further)
-        return order.quantity == 0  # True if fully matched
+        return order.is_filled()  # True if fully matched
 
     def add_order(self, order: Order) -> None:
         if order.symbol != self.symbol:
